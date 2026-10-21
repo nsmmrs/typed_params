@@ -537,3 +537,121 @@ RSpec.describe 'controller', type: :controller do
     end
   end
 end
+
+RSpec.describe 'default format' do
+  after { TypedParams::Formatters.unregister(:upper) if TypedParams::Formatters.formats.key?(:upper) }
+
+  def build_controller(source: :params, action: :create, schema: nil, format: nil, **kwargs, &block)
+    Class.new(ActionController::Base) do
+      @controller_name = 'users'
+      include TypedParams::Controller
+    end.tap do |klass|
+      case source
+      when :params
+        klass.typed_params(on: action, schema:, format:, **kwargs, &block)
+      when :query
+        klass.typed_query(on: action, schema:, format:, **kwargs, &block)
+      end
+    end
+  end
+
+  def stub_controller(klass, action:, params:)
+    klass.new.tap do |controller|
+      request = double('request', request_parameters: params, query_parameters: params)
+
+      allow(controller).to receive(:request).and_return(request)
+      allow(controller).to receive(:action_name).and_return(action.to_s)
+    end
+  end
+
+  def register_upper_format
+    TypedParams::Formatters.register(:upper,
+      transform: -> params { params.deep_transform_keys { _1.to_s.upcase.to_sym } },
+    )
+  end
+
+  it 'should apply config default to inline schemas' do
+    TypedParams.config.default_format = :rails
+
+    klass      = build_controller { param :email, type: :string }
+    controller = stub_controller(klass, action: :create, params: { email: 'foo@example.com' })
+
+    expect(controller.typed_params).to eq(user: { email: 'foo@example.com' })
+  end
+
+  it 'should prefer in-schema format over config default' do
+    register_upper_format
+
+    TypedParams.config.default_format = :rails
+
+    klass      = build_controller { format :upper; param :email, type: :string }
+    controller = stub_controller(klass, action: :create, params: { email: 'foo@example.com' })
+
+    expect(controller.typed_params).to eq(EMAIL: 'foo@example.com')
+  end
+
+  it 'should prefer handler format over schema and config' do
+    register_upper_format
+
+    TypedParams.config.default_format = :rails
+
+    klass      = build_controller(format: :rails) { format :upper; param :email, type: :string }
+    controller = stub_controller(klass, action: :create, params: { email: 'foo@example.com' })
+
+    expect(controller.typed_params).to eq(user: { email: 'foo@example.com' })
+  end
+
+  it 'should prefer per-call format over handler, schema, and config' do
+    register_upper_format
+
+    TypedParams.config.default_format = :rails
+
+    klass      = build_controller(format: :rails) { param :email, type: :string }
+    controller = stub_controller(klass, action: :create, params: { email: 'foo@example.com' })
+
+    expect(controller.typed_params(format: :upper)).to eq(EMAIL: 'foo@example.com')
+  end
+
+  it 'should disable formatting with per-call nil' do
+    TypedParams.config.default_format = :rails
+
+    klass      = build_controller { param :email, type: :string }
+    controller = stub_controller(klass, action: :create, params: { email: 'foo@example.com' })
+
+    expect(controller.typed_params(format: nil)).to eq(email: 'foo@example.com')
+  end
+
+  it 'should raise on invalid config default at definition' do
+    TypedParams.config.default_format = :bogus
+
+    expect {
+      build_controller { param :email, type: :string }
+    }.to raise_error ArgumentError
+  end
+
+  it 'should not mutate shared schemas' do
+    TypedParams.config.default_format = :rails
+
+    klass = build_controller
+    klass.typed_schema(:shared) { param :email, type: :string }
+    klass.typed_params(on: :show, schema: :shared)
+
+    handler = klass.typed_handlers.params[klass, :show]
+
+    expect(handler.schema.formatter).to be_nil
+    expect(handler.format).to be_nil
+
+    controller = stub_controller(klass, action: :show, params: { email: 'foo@example.com' })
+
+    expect(controller.typed_params).to eq(email: 'foo@example.com')
+  end
+
+  it 'should apply config default to query schemas' do
+    TypedParams.config.default_format = :rails
+
+    klass      = build_controller(source: :query, action: :index) { param :q, type: :string, optional: true }
+    controller = stub_controller(klass, action: :index, params: { q: 'foo' })
+
+    expect(controller.typed_query).to eq(user: { q: 'foo' })
+  end
+end

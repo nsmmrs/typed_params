@@ -28,4 +28,16 @@ RSpec.describe TypedParams::Configuration do
   describe '#key_transform' do
     it('should respond') { expect(subject).to respond_to :key_transform }
   end
+
+  describe '#default_format=' do
+    it('should respond') { expect(subject).to respond_to :default_format= }
+  end
+
+  describe '#default_format' do
+    it('should respond') { expect(subject).to respond_to :default_format }
+
+    it 'should default to nil' do
+      expect(subject.default_format).to be nil
+    end
+  end
 end

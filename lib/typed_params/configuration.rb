@@ -37,5 +37,14 @@ module TypedParams
     #
     class_attribute :key_transform
     self.key_transform = nil
+
+    ##
+    # default_format defines the fallback output format applied to
+    # schemas that do not declare their own `format`. Explicit
+    # per-call, per-handler, and in-schema formats always win.
+    # Set in an initializer before schemas are defined.
+    #
+    class_attribute :default_format
+    self.default_format = nil
   end
 end

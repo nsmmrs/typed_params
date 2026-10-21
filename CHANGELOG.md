@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add `config.default_format` fallback applied to inline schemas without their own `format`. Resolution order: per-call argument, per-handler `format:`, in-schema `format` DSL, then the default. Fixes per-handler `format:` being ignored, and adds `format:` to `.typed_query`. Shared schemas are never modified by the default.
+
 ## 1.5.0
 
 - Add `collapse:` keyword to "collapse" a hash param's children into its parent.

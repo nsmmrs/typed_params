@@ -33,7 +33,7 @@ module TypedParams
                     when Symbol, String
                       Formatters[format]
                     when AUTO
-                      schema.formatter
+                      handler.format ? Formatters[handler.format] : schema.formatter
                     else
                       nil
                     end
@@ -61,7 +61,7 @@ module TypedParams
                     when Symbol, String
                       Formatters[format]
                     when AUTO
-                      schema.formatter
+                      handler.format ? Formatters[handler.format] : schema.formatter
                     else
                       nil
                     end
@@ -113,6 +113,8 @@ module TypedParams
 
     class_methods do
       def typed_params(on: nil, schema: nil, format: nil, **kwargs, &)
+        inline = schema.nil?
+
         schema = case schema
                  in Array(Symbol => namespace, Symbol => key)
                    typed_schemas[namespace, key] || raise(ArgumentError, "schema does not exist: #{namespace.inspect}/#{key.inspect}")
@@ -121,6 +123,13 @@ module TypedParams
                  in nil
                    Schema.new(**kwargs, controller: self, source: :params, &)
                  end
+
+        if inline && format.nil?
+          default = TypedParams.config.default_format
+
+          schema.format(default) if
+            default.present? && schema.formatter.nil?
+        end
 
         case on
         in Array => actions
@@ -134,7 +143,9 @@ module TypedParams
         end
       end
 
-      def typed_query(on: nil, schema: nil, **kwargs, &)
+      def typed_query(on: nil, schema: nil, format: nil, **kwargs, &)
+        inline = schema.nil?
+
         schema = case schema
                  in Array(Symbol => namespace, Symbol => key)
                    typed_schemas[namespace, key] || raise(ArgumentError, "schema does not exist: #{namespace.inspect}/#{key.inspect}")
@@ -145,15 +156,22 @@ module TypedParams
                    Schema.new(nilify_blanks: true, strict: false, **kwargs, controller: self, source: :query, &)
                  end
 
+        if inline && format.nil?
+          default = TypedParams.config.default_format
+
+          schema.format(default) if
+            default.present? && schema.formatter.nil?
+        end
+
         case on
         in Array => actions
           actions.each do |action|
-            typed_handlers.query[self, action] = Handler.new(for: :query, action:, schema:)
+            typed_handlers.query[self, action] = Handler.new(for: :query, action:, schema:, format:)
           end
         in Symbol => action
-          typed_handlers.query[self, action] = Handler.new(for: :query, action:, schema:)
+          typed_handlers.query[self, action] = Handler.new(for: :query, action:, schema:, format:)
         in nil
-          typed_handlers.deferred << Handler.new(for: :query, schema:)
+          typed_handlers.deferred << Handler.new(for: :query, schema:, format:)
         end
       end
 

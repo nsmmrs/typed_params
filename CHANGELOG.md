@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add `default:` keyword to fill in missing params. Applied only when missing (never clobbers explicit `nil`, `false`, or blanks), before coercion and validation. Procs are called per request.
+
 ## 1.5.0
 
 - Add `collapse:` keyword to "collapse" a hash param's children into its parent.

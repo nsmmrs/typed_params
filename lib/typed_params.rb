@@ -3,6 +3,7 @@
 require 'typed_params/bouncer'
 require 'typed_params/coercer'
 require 'typed_params/configuration'
+require 'typed_params/defaulter'
 require 'typed_params/controller'
 require 'typed_params/formatters'
 require 'typed_params/formatters/formatter'
@@ -60,6 +61,11 @@ module TypedParams
   # Sentinel value for determining if something is the root. For
   # example, determining if a schema is the root node.
   ROOT = Object.new
+
+  # Sentinel value for determining that no default was provided.
+  # This allows `default: nil` and `default: false` to be explicit
+  # defaults rather than the absence of a default.
+  NO_DEFAULT = Object.new
 
   class UndefinedActionError < StandardError; end
   class InvalidMethodError < StandardError; end

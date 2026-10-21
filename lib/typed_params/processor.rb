@@ -12,6 +12,7 @@ module TypedParams
       pipeline = Pipeline.new
 
       pipeline << Bouncer.new(controller:, schema:)
+      pipeline << Defaulter.new(controller:, schema:)
       pipeline << Coercer.new(schema:)
       pipeline << Validator.new(schema:)
       pipeline << Transformer.new(controller:, schema:)

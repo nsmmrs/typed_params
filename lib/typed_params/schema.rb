@@ -12,6 +12,7 @@ module TypedParams
                 :key,
                 :as,
                 :alias,
+                :default,
                 :if,
                 :unless
 
@@ -43,6 +44,7 @@ module TypedParams
       alias: nil,
       collapse: nil,
       casing: TypedParams.config.key_transform,
+      default: NO_DEFAULT,
       &block
     )
       key ||= ROOT
@@ -52,6 +54,12 @@ module TypedParams
 
       raise ArgumentError, 'root cannot be null' if
         key == ROOT && allow_nil
+
+      raise ArgumentError, 'root cannot have a default' if
+        key == ROOT && !default.equal?(NO_DEFAULT)
+
+      raise ArgumentError, 'default must be a zero-arity proc when given as a proc' if
+        default.is_a?(Proc) && default.arity != 0
 
       raise ArgumentError, 'source must be one of: :params or :query' unless
         source.nil? || source == :params || source == :query
@@ -106,6 +114,7 @@ module TypedParams
       @length            = length
       @depth             = depth
       @casing            = casing
+      @default           = default
       @transform         = transform
       @validate          = validate
       @collapse          = collapse
@@ -256,6 +265,9 @@ module TypedParams
     ##
     # items defines a set of like-parameters for an array schema.
     def items(**kwargs, &)
+      raise ArgumentError, 'endless items cannot have a default' if
+        kwargs.key?(:default)
+
       item(0, **kwargs, &)
 
       endless!
@@ -280,6 +292,8 @@ module TypedParams
         []
       end
     end
+
+    def default?           = !@default.equal?(NO_DEFAULT)
 
     def root?              = key == ROOT
     def child?             = !root?

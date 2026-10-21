@@ -435,6 +435,7 @@ Parameters can have validations, transforms, and more.
 - [`:type`](#parameter-type)
 - [`:strict`](#strict-parameter)
 - [`:optional`](#optional-parameter)
+- [`:default`](#default-parameter)
 - [`:if` and `:unless`](#conditional-parameter)
 - [`:as`](#rename-parameter)
 - [`:alias`](#alias-parameter)
@@ -497,6 +498,22 @@ param :first_name, type: :string, optional: true
 ```
 
 By default, parameters are required.
+
+#### Default parameter
+
+The parameter's default value, applied only when the parameter is missing.
+Present values — including `nil`, `false`, and blank strings — are never
+replaced. The default is coerced, validated, and transformed like any
+provided value.
+
+```ruby
+param :role, type: :string, default: 'user'
+param :greeting, type: :string, default: -> { 'hello' }
+```
+
+The proc form is called on each request. Mutable defaults (arrays, hashes,
+strings) are duplicated per request. A missing parent is never materialized
+from its children's defaults.
 
 #### Conditional parameter
 

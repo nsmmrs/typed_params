@@ -248,6 +248,39 @@ RSpec.describe TypedParams::Schema do
     end
   end
 
+  describe '#default' do
+    it 'should not have a default by default' do
+      schema = TypedParams::Schema.new(type: :hash) { param :foo, type: :string }
+
+      expect(schema.children[:foo].default?).to be false
+    end
+
+    it 'should allow false and nil defaults' do
+      schema = TypedParams::Schema.new(type: :hash) do
+        param :foo, type: :boolean, default: false
+        param :bar, type: :string, allow_nil: true, default: nil
+      end
+
+      expect(schema.children[:foo].default).to be false
+      expect(schema.children[:bar].default).to be nil
+    end
+
+    it 'should raise on root default' do
+      expect { TypedParams::Schema.new(type: :hash, default: {}) }
+        .to raise_error ArgumentError
+    end
+
+    it 'should raise on endless items default' do
+      expect { TypedParams::Schema.new(type: :array) { items type: :string, default: 'x' } }
+        .to raise_error ArgumentError
+    end
+
+    it 'should raise on proc default with arity' do
+      expect { TypedParams::Schema.new(type: :hash) { param :foo, type: :string, default: -> v { v } } }
+        .to raise_error ArgumentError
+    end
+  end
+
   describe '#with' do
     let :schema do
       TypedParams::Schema.new type: :hash do

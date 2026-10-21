@@ -37,5 +37,18 @@ module TypedParams
     #
     class_attribute :key_transform
     self.key_transform = nil
+
+    ##
+    # filtered_params defines keys that are stripped from incoming
+    # request parameters before parameterization. This is useful for
+    # ignoring internal parameters injected by Rails form helpers,
+    # such as `authenticity_token` and `_method`, which would otherwise
+    # raise `UnpermittedParameterError` in strict schemas.
+    #
+    # Keys declared via `param` (or `:alias`) in the schema always win
+    # and are never filtered.
+    #
+    class_attribute :filtered_params
+    self.filtered_params = %i[authenticity_token _method]
   end
 end

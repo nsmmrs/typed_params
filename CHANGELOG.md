@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Add `config.filtered_params` to strip Rails form internals (`authenticity_token`, `_method`) before parameterization. Declared keys always win.
+
 ## 1.5.0
 
 - Add `collapse:` keyword to "collapse" a hash param's children into its parent.

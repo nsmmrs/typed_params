@@ -536,4 +536,71 @@ RSpec.describe 'controller', type: :controller do
       expect(response.body).to include c
     end
   end
+
+  context 'with filtered params' do
+    controller do
+      include TypedParams::Controller
+
+      typed_params { param :email, type: :string }
+      def create = render json: typed_params
+    end
+
+    it 'should ignore Rails form internals' do
+      post :create, params: { email: 'foo@example.com', authenticity_token: 'token', _method: 'patch' }
+
+      body = JSON.parse(response.body, symbolize_names: true)
+
+      expect(body).to eq email: 'foo@example.com'
+    end
+
+    it 'should still raise on other unpermitted params' do
+      expect { post :create, params: { email: 'foo@example.com', bogus: 'nope' } }
+        .to raise_error TypedParams::UnpermittedParameterError
+    end
+
+    it 'should respect an empty filter list' do
+      TypedParams.config.filtered_params = []
+
+      expect { post :create, params: { email: 'foo@example.com', authenticity_token: 'token' } }
+        .to raise_error TypedParams::UnpermittedParameterError
+    end
+  end
+
+  context 'with declared filtered key' do
+    controller do
+      include TypedParams::Controller
+
+      typed_params do
+        param :authenticity_token, type: :string
+        param :email, type: :string
+      end
+      def create = render json: typed_params
+    end
+
+    it 'should keep declared filtered keys' do
+      post :create, params: { email: 'foo@example.com', authenticity_token: 'token' }
+
+      body = JSON.parse(response.body, symbolize_names: true)
+
+      expect(body).to eq email: 'foo@example.com', authenticity_token: 'token'
+    end
+  end
+
+  context 'with nested filtered key' do
+    controller do
+      include TypedParams::Controller
+
+      typed_params do
+        param :user, type: :hash do
+          param :email, type: :string
+        end
+      end
+      def create = render json: typed_params
+    end
+
+    it 'should not filter nested keys' do
+      expect { post :create, params: { user: { email: 'foo@example.com', _method: 'patch' } } }
+        .to raise_error TypedParams::UnpermittedParameterError
+    end
+  end
 end

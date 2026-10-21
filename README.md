@@ -374,6 +374,19 @@ TypedParams.configure do |config|
   #   }
   #
   config.path_transform = :lower_camel
+
+  # Keys stripped from incoming request params before parameterization.
+  # Useful for ignoring internal params injected by Rails form helpers,
+  # which would otherwise raise UnpermittedParameterError in strict
+  # schemas. Keys declared via `param` (or `:alias`) always win.
+  #
+  #   curl -X POST http://localhost:3000/users -d '{"email":"jane@doe.example","authenticity_token":"token","_method":"post"}'
+  #
+  # Within the controller, the params would be:
+  #
+  #   puts typed_params # => { email: 'jane@doe.example' }
+  #
+  config.filtered_params = %i[authenticity_token _method]
 end
 ```
 

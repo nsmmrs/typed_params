@@ -28,7 +28,7 @@ module TypedParams
         # TODO(ezekg) Add a config here that accepts a block, similar to a Rack app
         #             so that users can define their own parameter source. E.g.
         #             using and parsing request.body can allow array roots.
-        params    = paramz.call(value: request.request_parameters.deep_symbolize_keys)
+        params    = paramz.call(value: filtered_request_params(request.request_parameters.deep_symbolize_keys, schema:))
         formatter = case format
                     when Symbol, String
                       Formatters[format]
@@ -56,7 +56,7 @@ module TypedParams
         schema    = handler.schema
         processor = Processor.new(controller: self, schema:)
         paramz    = Parameterizer.new(schema:)
-        params    = paramz.call(value: request.query_parameters.deep_symbolize_keys)
+        params    = paramz.call(value: filtered_request_params(request.query_parameters.deep_symbolize_keys, schema:))
         formatter = case format
                     when Symbol, String
                       Formatters[format]
@@ -75,6 +75,25 @@ module TypedParams
       end
 
       private
+
+      # Removes globally filtered keys (e.g. Rails form internals) from
+      # the top level of the incoming params. Keys declared in the schema
+      # (via `param` or `:alias`) always win and are kept.
+      def filtered_request_params(hash, schema:)
+        return hash unless
+          hash.is_a?(Hash)
+
+        filtered = Array(TypedParams.config.filtered_params).map(&:to_sym)
+        return hash if
+          filtered.empty?
+
+        declared = if schema.children.is_a?(Hash)
+                     schema.children.values.flat_map { [_1.key, _1.alias] }.compact.map(&:to_sym)
+                   else
+                     []
+                   end
+        hash.except(*(filtered - declared))
+      end
 
       def respond_to_missing?(method_name, *)
         return super unless

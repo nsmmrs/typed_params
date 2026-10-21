@@ -15,16 +15,19 @@ RSpec.configure do |config|
     @ignore_nil_optionals_was = TypedParams.config.ignore_nil_optionals
     @path_transform_was       = TypedParams.config.path_transform
     @key_transform_was        = TypedParams.config.key_transform
+    @filtered_params_was      = TypedParams.config.filtered_params.dup
 
     # FIXME(ezekg) Add a config.reset! method in test envs?
     TypedParams.config.ignore_nil_optionals = false
     TypedParams.config.path_transform       = nil
     TypedParams.config.key_transform        = nil
+    TypedParams.config.filtered_params      = %i[authenticity_token _method]
   end
 
   config.after :each do
     TypedParams.config.ignore_nil_optionals = @ignore_nil_optionals_was
     TypedParams.config.path_transform       = @path_transform_was
     TypedParams.config.key_transform        = @key_transform_was
+    TypedParams.config.filtered_params      = @filtered_params_was
   end
 end

@@ -19,6 +19,27 @@ module TypedParams
                 :schema
 
     ##
+    # guard_passes? evaluates a schema's :if or :unless guard against the
+    # controller, returning true when the param should be kept.
+    def guard_passes?(schema)
+      return true unless
+        schema.if? || schema.unless?
+
+      cond = schema.if? ? schema.if : schema.unless
+      res  = case cond
+             in Proc => method
+               controller.instance_exec(&method)
+             in Symbol => method
+               controller.send(method)
+             else
+               raise InvalidMethodError, "invalid method: #{cond.inspect}"
+             end
+
+      schema.unless? && !res ||
+        schema.if? && res
+    end
+
+    ##
     # depth_first_map performs a postorder DFS-like traversal algorithm
     # over the params. A postorder DFS starts at the leftmost leaf, and
     # works its way through to the rightmost sibling, then it backtracks

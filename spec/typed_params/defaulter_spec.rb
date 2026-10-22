@@ -47,6 +47,17 @@ RSpec.describe TypedParams::Defaulter do
     expect(second[:tags].value).to eq []
   end
 
+  it 'should not share nested mutable defaults between requests' do
+    default = { 'roles' => ['user'] }
+    schema  = TypedParams::Schema.new(type: :hash) { param :meta, type: :hash, allow_non_scalars: true, default: }
+
+    first = process(schema, {})
+    first[:meta].value['roles'] << 'admin'
+
+    expect(default).to eq('roles' => ['user'])
+    expect(process(schema, {})[:meta].value).to eq('roles' => ['user'])
+  end
+
   it 'should not clobber explicit nil' do
     schema = TypedParams::Schema.new(type: :hash) { param :role, type: :string, allow_nil: true, default: 'user' }
 

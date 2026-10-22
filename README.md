@@ -511,8 +511,9 @@ param :role, type: :string, default: 'user'
 param :greeting, type: :string, default: -> { 'hello' }
 ```
 
-The proc form is called on each request. Mutable defaults (arrays, hashes,
-strings) are duplicated per request. A missing parent is never materialized
+The proc form is called on each request, without a receiver, so it cannot
+access controller methods such as `current_user`. Mutable defaults (arrays,
+hashes, strings) are deep-duplicated per request. A missing parent is never materialized
 from its children's defaults.
 
 #### Conditional parameter

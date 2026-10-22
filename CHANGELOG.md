@@ -2,7 +2,9 @@
 
 ## Unreleased
 
-- Add `config.default_format` fallback applied to inline schemas without their own `format`. Resolution order: per-call argument, per-handler `format:`, in-schema `format` DSL, then the default. Fixes per-handler `format:` being ignored, and adds `format:` to `.typed_query`. Shared schemas are never modified by the default.
+- Add `config.default_format` fallback applied to inline `typed_params` schemas without their own `format`. Resolution order: per-call argument, per-handler `format:`, in-schema `format` DSL, then the default. Query schemas and shared schemas are never modified by the default.
+- Fix per-handler `format:` being ignored, and apply its decorators (e.g. `typed_meta` for `:jsonapi`) onto the controller.
+- Add `format:` to `.typed_query`.
 
 ## 1.5.0
 

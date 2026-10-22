@@ -29,14 +29,7 @@ module TypedParams
         #             so that users can define their own parameter source. E.g.
         #             using and parsing request.body can allow array roots.
         params    = paramz.call(value: request.request_parameters.deep_symbolize_keys)
-        formatter = case format
-                    when Symbol, String
-                      Formatters[format]
-                    when AUTO
-                      handler.format ? Formatters[handler.format] : schema.formatter
-                    else
-                      nil
-                    end
+        formatter = typed_formatter(handler, format:)
 
         processor.call(params)
 
@@ -57,14 +50,7 @@ module TypedParams
         processor = Processor.new(controller: self, schema:)
         paramz    = Parameterizer.new(schema:)
         params    = paramz.call(value: request.query_parameters.deep_symbolize_keys)
-        formatter = case format
-                    when Symbol, String
-                      Formatters[format]
-                    when AUTO
-                      handler.format ? Formatters[handler.format] : schema.formatter
-                    else
-                      nil
-                    end
+        formatter = typed_formatter(handler, format:)
 
         processor.call(params)
 
@@ -75,6 +61,19 @@ module TypedParams
       end
 
       private
+
+      # Resolves the output formatter, in order of precedence: per-call
+      # argument, per-handler format, then the schema's own format.
+      def typed_formatter(handler, format:)
+        case format
+        when Symbol, String
+          Formatters[format]
+        when AUTO
+          handler.format ? Formatters[handler.format] : handler.schema.formatter
+        else
+          nil
+        end
+      end
 
       def respond_to_missing?(method_name, *)
         return super unless
@@ -124,7 +123,9 @@ module TypedParams
                    Schema.new(**kwargs, controller: self, source: :params, &)
                  end
 
-        if inline && format.nil?
+        if format.present?
+          decorate_typed_format(format)
+        elsif inline
           default = TypedParams.config.default_format
 
           schema.format(default) if
@@ -144,8 +145,6 @@ module TypedParams
       end
 
       def typed_query(on: nil, schema: nil, format: nil, **kwargs, &)
-        inline = schema.nil?
-
         schema = case schema
                  in Array(Symbol => namespace, Symbol => key)
                    typed_schemas[namespace, key] || raise(ArgumentError, "schema does not exist: #{namespace.inspect}/#{key.inspect}")
@@ -156,12 +155,8 @@ module TypedParams
                    Schema.new(nilify_blanks: true, strict: false, **kwargs, controller: self, source: :query, &)
                  end
 
-        if inline && format.nil?
-          default = TypedParams.config.default_format
-
-          schema.format(default) if
-            default.present? && schema.formatter.nil?
-        end
+        decorate_typed_format(format) if
+          format.present?
 
         case on
         in Array => actions
@@ -183,6 +178,15 @@ module TypedParams
       end
 
       private
+
+      # Applies a per-handler format's decorators onto the controller,
+      # mirroring Schema#format. Also validates the format eagerly.
+      def decorate_typed_format(format)
+        formatter = Formatters[format]
+
+        instance_exec(&formatter.decorator) if
+          formatter.decorator?
+      end
 
       def method_added(method_name)
         return super unless

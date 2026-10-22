@@ -375,12 +375,12 @@ TypedParams.configure do |config|
   #
   config.path_transform = :lower_camel
 
-  # Fallback output format applied to inline schemas that do not declare
-  # their own `format`. Set this in an initializer before schemas load.
-  # Explicit per-call, per-handler, and in-schema formats always win,
-  # and per-call `format: nil` disables formatting. Shared schemas
-  # referenced via `schema:` are never modified — declare their format
-  # explicitly.
+  # Fallback output format applied to inline `typed_params` schemas that
+  # do not declare their own `format`. Set this in an initializer before
+  # schemas load. Explicit per-call, per-handler, and in-schema formats
+  # always win, and per-call `format: nil` disables formatting. Query
+  # schemas and shared schemas referenced via `schema:` are never
+  # modified — declare their format explicitly.
   #
   config.default_format = :jsonapi
 end
@@ -970,8 +970,9 @@ one format to another format.
 By default, no formatter is used, unless a `config.default_format` fallback
 is set (see [Configuration](#configuration)). The format resolution order is:
 per-call `typed_params(format:)` argument, then per-handler `format:`, then the
-in-schema `format` DSL, then `config.default_format`. Shared schemas referenced
-via `schema:` are never modified by the default — give them an explicit format.
+in-schema `format` DSL, then `config.default_format`. Query schemas and shared
+schemas referenced via `schema:` are never modified by the default — give them
+an explicit format.
 
 #### JSONAPI format
 

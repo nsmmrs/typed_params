@@ -646,12 +646,32 @@ RSpec.describe 'default format' do
     expect(controller.typed_params).to eq(email: 'foo@example.com')
   end
 
-  it 'should apply config default to query schemas' do
-    TypedParams.config.default_format = :rails
+  it 'should not apply config default to query schemas' do
+    TypedParams.config.default_format = :jsonapi
 
     klass      = build_controller(source: :query, action: :index) { param :q, type: :string, optional: true }
     controller = stub_controller(klass, action: :index, params: { q: 'foo' })
 
+    expect(controller.typed_query).to eq(q: 'foo')
+  end
+
+  it 'should apply handler format to query schemas' do
+    klass      = build_controller(source: :query, action: :index, format: :rails) { param :q, type: :string, optional: true }
+    controller = stub_controller(klass, action: :index, params: { q: 'foo' })
+
     expect(controller.typed_query).to eq(user: { q: 'foo' })
+  end
+
+  it 'should apply handler format decorators' do
+    klass      = build_controller(format: :jsonapi) { param :data, type: :hash }
+    controller = stub_controller(klass, action: :create, params: { data: {} })
+
+    expect(controller).to respond_to :typed_meta
+  end
+
+  it 'should raise on invalid handler format at definition' do
+    expect {
+      build_controller(format: :bogus) { param :email, type: :string }
+    }.to raise_error ArgumentError
   end
 end

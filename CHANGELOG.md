@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Add `config.filtered_params` to strip Rails form internals (`authenticity_token`, `_method`) before parameterization. Declared keys always win.
+- Add `config.filtered_params` to strip Rails form internals (`authenticity_token`, `_method`) before parameterization. Declared keys always win. **Behavior change:** this is enabled by default, so strict schemas no longer raise `UnpermittedParameterError` for these keys; set `config.filtered_params = []` to restore the previous behavior.
 
 ## 1.5.0
 
